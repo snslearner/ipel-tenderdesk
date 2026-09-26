@@ -38,6 +38,17 @@ test("signed-out visitor opening an app page is sent to the sign-in page at /", 
   await expect(page.getByText("Demo only: all data is fictitious.")).toBeVisible();
 });
 
+test("/login redirects to / when signed out and when signed in", async ({ page }) => {
+  await page.goto("/login");
+  await expect(page).toHaveURL(SIGN_IN_URL);
+  await expect(page.getByTestId("signed-in-banner")).toHaveCount(0);
+
+  await login(page, "purchase@example.com");
+  await page.goto("/login");
+  await expect(page).toHaveURL(SIGN_IN_URL);
+  await expect(page.getByTestId("signed-in-banner")).toContainText("Rakesh Menon (Purchase)");
+});
+
 test("wrong password shows the Supabase error", async ({ page }) => {
   await page.goto("/");
   await page.getByLabel("Email").fill("tender@example.com");
