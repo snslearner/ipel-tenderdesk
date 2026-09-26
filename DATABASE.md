@@ -43,7 +43,7 @@ Money is numeric (INR). Format with `Intl.NumberFormat('en-IN', { style: 'curren
 | Acknowledge client PO | `rpc('acknowledge_po', { p_po_id })` | owner |
 | Release PO lock | `rpc('release_po_lock', { p_po_id })` — only after every open `po_discrepancies` row has `amendment_ref` | owner |
 | Record a dispatch | `rpc('record_dispatch', { p_po_id, p_dc_number, p_dispatched_on, p_signed, p_lines: [{ client_po_item_id, qty }] })` — challan and lines in one transaction; returns the dispatch id | anyone |
-| Refresh alerts | `rpc('fn_refresh_alerts')` — call on dashboard load; idempotent; creates extension-letter drafts + reminders | anyone |
+| Refresh alerts | `rpc('fn_refresh_alerts')` — the app calls it after the dashboard has loaded (Next `after()`), at most once a minute per server; idempotent; creates extension-letter drafts + reminders | anyone |
 
 Everything else is plain insert/update on tables (all signed-in users have full access via RLS).
 

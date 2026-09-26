@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { refreshAlertsThrottled } from "@/lib/alerts-refresh";
 import { formatDate, formatINRCompact, formatPct, todayIST } from "@/lib/format";
 import { roleLabel } from "@/lib/auth/roles";
 import { OPEN_STATUSES } from "@/lib/tenders";
@@ -15,8 +17,13 @@ const count = (n: number | null) => (n ?? 0).toLocaleString("en-IN");
 export default async function DashboardPage() {
   const supabase = await createClient();
 
-  // Idempotent: creates extension-letter drafts and reminders that are due. Never blocks the page.
-  const refresh = await supabase.rpc("fn_refresh_alerts");
+  // Alerts (extension drafts + reminders) are refreshed after the page is sent, at most once a
+  // minute per server, so dashboard loads never wait on it. New alerts show on the next load.
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  const accessToken = session?.access_token;
+  if (accessToken) after(() => refreshAlertsThrottled(accessToken));
 
   const today = todayIST();
   const [kpiRes, remRes, unpricedRes] = await Promise.all([
@@ -54,11 +61,6 @@ export default async function DashboardPage() {
         <h1 className="text-xl font-semibold tracking-tight">Dashboard</h1>
         <span className="text-xs text-muted-foreground">FY from {formatDate(k.fy_start)}</span>
       </div>
-      {refresh.error && (
-        <p role="status" className="text-sm text-destructive">
-          Alerts could not be refreshed: {refresh.error.message}
-        </p>
-      )}
 
       <section aria-label="Key figures" className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard
