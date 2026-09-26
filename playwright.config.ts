@@ -1,4 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
+import { loadEnvConfig } from "@next/env";
+
+// Tests read Supabase URL/anon key from .env.local to set up and reset shared demo data.
+loadEnvConfig(process.cwd());
 
 // Smoke suite runs against the Vercel preview URL when PLAYWRIGHT_BASE_URL is set,
 // otherwise against a local production build.
