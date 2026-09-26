@@ -10,7 +10,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
 
   return (
     <div className="flex min-h-dvh flex-1">
-      <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r bg-sidebar p-4 md:flex">
+      <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r bg-sidebar p-4 md:flex print:hidden">
         <div className="mb-6 px-3 text-base font-semibold tracking-tight">IPEL TenderDesk</div>
         <SidebarNav />
         <div className="mt-auto border-t pt-4">
@@ -19,14 +19,14 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b bg-background px-4 py-3 md:justify-end md:px-6">
+        <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b bg-background px-4 py-3 md:justify-end md:px-6 print:hidden">
           <span className="shrink-0 font-semibold tracking-tight md:hidden">IPEL TenderDesk</span>
           <div className="flex min-w-0 items-center gap-2">
             <UserBadge user={user} />
             <SwitchUserButton />
           </div>
         </header>
-        <main className="min-w-0 flex-1 p-4 pb-24 md:p-6 md:pb-6">{children}</main>
+        <main className="min-w-0 flex-1 p-4 pb-24 md:p-6 md:pb-6 print:p-0">{children}</main>
       </div>
 
       <BottomBar

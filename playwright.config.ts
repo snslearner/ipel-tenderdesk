@@ -14,8 +14,15 @@ export default defineConfig({
   testDir: "tests/e2e",
   use: { baseURL, channel },
   projects: [
-    { name: "desktop", use: { ...devices["Desktop Chrome"] } },
-    { name: "mobile", use: { ...devices["Desktop Chrome"], viewport: { width: 390, height: 844 } } },
+    // Signs in once per role and saves the session, so feature tests don't each hit
+    // Supabase Auth's per-IP sign-in rate limit. Login itself is tested in smoke.spec.ts.
+    { name: "setup", testMatch: /auth.setup.ts/ },
+    { name: "desktop", use: { ...devices["Desktop Chrome"] }, dependencies: ["setup"] },
+    {
+      name: "mobile",
+      use: { ...devices["Desktop Chrome"], viewport: { width: 390, height: 844 } },
+      dependencies: ["setup"],
+    },
   ],
   webServer: process.env.PLAYWRIGHT_BASE_URL
     ? undefined

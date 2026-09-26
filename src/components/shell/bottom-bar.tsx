@@ -20,7 +20,7 @@ export function BottomBar({ account }: { account: ReactNode }) {
   return (
     <nav
       aria-label="Main"
-      className="fixed inset-x-0 bottom-0 z-40 flex border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 flex border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden print:hidden"
     >
       {MOBILE_PRIMARY.map(({ href, label, icon: Icon }) => {
         const active = isActive(pathname, href);

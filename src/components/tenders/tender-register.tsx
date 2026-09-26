@@ -22,6 +22,7 @@ import {
   type TenderFilters,
   type TenderStatus,
 } from "@/lib/tenders";
+import { Chip, EmptyState } from "@/components/list-bits";
 import { StatusBadge } from "./status-badge";
 
 export type TenderRow = {
@@ -36,13 +37,16 @@ export type TenderRow = {
   margin_pct: number | null;
 };
 
+// A tender with no priced lines has total_bid 0: show a dash, not ₹0.00.
+const bidOrNull = (v: number | null) => (v ? v : null);
+
 const features = tableFeatures({ rowSortingFeature, sortedRowModel: createSortedRowModel() });
 const col = createColumnHelper<typeof features, TenderRow>();
 const columns = col.columns([
   col.accessor("ref_no", {
     header: "Ref",
     cell: (c) => (
-      <Link href={`/tenders/${c.row.original.id}`} className="font-medium underline-offset-4 hover:underline">
+      <Link href={`/tenders/${c.row.original.id}`} className="font-medium whitespace-nowrap underline-offset-4 hover:underline">
         {c.getValue()}
       </Link>
     ),
@@ -62,7 +66,7 @@ const columns = col.columns([
   }),
   col.accessor("total_bid", {
     header: "Bid value",
-    cell: (c) => <span className="whitespace-nowrap tabular-nums">{formatINR(c.getValue())}</span>,
+    cell: (c) => <span className="whitespace-nowrap tabular-nums">{formatINR(bidOrNull(c.getValue()))}</span>,
     meta: { align: "right" },
   }),
   col.accessor("margin_pct", {
@@ -154,9 +158,9 @@ export function TenderRegister({ rows, clients, initialFilters }: Props) {
       </div>
 
       {rows.length === 0 ? (
-        <Empty>No tenders yet.</Empty>
+        <EmptyState>No tenders yet.</EmptyState>
       ) : visible.length === 0 ? (
-        <Empty>No tenders match these filters.</Empty>
+        <EmptyState>No tenders match these filters.</EmptyState>
       ) : (
         <>
           {/* Wide screens: sortable table */}
@@ -212,14 +216,14 @@ export function TenderRegister({ rows, clients, initialFilters }: Props) {
                   className="block space-y-2 rounded-xl border bg-card p-3 hover:bg-accent/50"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <span className="font-medium">{t.ref_no}</span>
+                    <span className="font-medium whitespace-nowrap">{t.ref_no}</span>
                     <StatusBadge status={t.status} />
                   </div>
                   <p className="line-clamp-2 text-sm">{t.title}</p>
                   <p className="truncate text-xs text-muted-foreground">{t.client_name}</p>
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                     <span>Due {formatDate(t.submission_due)}</span>
-                    <span>Bid {formatINRCompact(t.total_bid)}</span>
+                    <span>Bid {formatINRCompact(bidOrNull(t.total_bid))}</span>
                     <span>Margin {formatPct(t.margin_pct)}</span>
                   </div>
                 </Link>
@@ -232,24 +236,3 @@ export function TenderRegister({ rows, clients, initialFilters }: Props) {
   );
 }
 
-function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button
-      type="button"
-      aria-pressed={active}
-      onClick={onClick}
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition-colors",
-        active ? "border-primary bg-primary text-primary-foreground [&_span]:text-primary-foreground/70" : "hover:bg-accent",
-      )}
-    >
-      {children}
-    </button>
-  );
-}
-
-function Empty({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">{children}</div>
-  );
-}

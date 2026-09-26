@@ -20,9 +20,9 @@ export function KpiCard({ label, value, sub, href, tone = "default", testId }: P
       data-testid={testId}
       className="group flex min-w-0 flex-col gap-1 rounded-xl border bg-card p-4 transition-colors hover:bg-accent/50 focus-visible:outline-2 focus-visible:outline-ring"
     >
-      <span className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
-        <span className="truncate">{label}</span>
-        <ChevronRight className="size-4 shrink-0 opacity-50 group-hover:opacity-100" />
+      <span className="flex items-start justify-between gap-2 text-sm text-muted-foreground">
+        <span className="min-w-0">{label}</span>
+        <ChevronRight className="mt-0.5 size-4 shrink-0 opacity-50 group-hover:opacity-100" />
       </span>
       <span
         data-slot="kpi-value"

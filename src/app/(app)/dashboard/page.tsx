@@ -72,7 +72,7 @@ export default async function DashboardPage() {
           label="Order book"
           value={formatINRCompact(k.order_book_value)}
           sub={`${count(k.active_orders)} active orders`}
-          href="/orders"
+          href="/orders?filter=active"
         />
         <KpiCard
           testId="kpi-due-45"
@@ -118,7 +118,7 @@ export default async function DashboardPage() {
         >
           <div className="flex items-baseline justify-between gap-2">
             <span className="text-sm text-muted-foreground">Receivables by age (days)</span>
-            <Link href="/orders?view=receivables" className="shrink-0 text-xs font-medium underline underline-offset-4">
+            <Link href="/orders?filter=receivables" className="shrink-0 text-xs font-medium underline underline-offset-4">
               View
             </Link>
           </div>
@@ -139,8 +139,8 @@ export default async function DashboardPage() {
           testId="kpi-payables"
           label="Payables"
           value={formatINRCompact(k.payables_total)}
-          sub="Open vendor PO balance"
-          href="/orders?view=payables"
+          sub="Owed for goods received"
+          href="/orders?filter=payables"
         />
         <KpiCard
           testId="kpi-guarantees"

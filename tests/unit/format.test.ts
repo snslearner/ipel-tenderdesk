@@ -18,6 +18,8 @@ describe("formatINRCompact", () => {
     expect(formatINRCompact(10000000)).toBe("₹1.00 Cr");
     expect(formatINRCompact(2073111.2)).toBe("₹20.73 L");
     expect(formatINRCompact(100000)).toBe("₹1.00 L");
+    // v_dashboard_kpis.bg_live_value on the seed data: about ₹7.71 Cr, not ₹771 Cr.
+    expect(formatINRCompact(77070322.3)).toBe("₹7.71 Cr");
   });
   it("shows smaller amounts in full rupees", () => {
     expect(formatINRCompact(99999)).toBe("₹99,999");
