@@ -3,6 +3,7 @@ import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isRole, type Role } from "@/lib/auth/roles";
+import { withJwtSkewRetry } from "@/lib/auth/jwt-skew-retry";
 
 export type SessionUser = { id: string; email: string; fullName: string; role: Role | null };
 
@@ -15,8 +16,10 @@ export const getSessionUser = cache(async (): Promise<SessionUser> => {
   if (!user) redirect("/login");
 
   const [profileRes, roleRes] = await Promise.all([
-    supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle(),
-    supabase.rpc("fn_my_role"),
+    withJwtSkewRetry(() =>
+      supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle(),
+    ),
+    withJwtSkewRetry(() => supabase.rpc("fn_my_role")),
   ]);
   if (profileRes.error) throw new Error(`Could not load profile: ${profileRes.error.message}`);
   if (roleRes.error) throw new Error(`Could not load role: ${roleRes.error.message}`);
