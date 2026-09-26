@@ -1,36 +1,34 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# IPEL TenderDesk
 
-## Getting Started
+Tender-to-cash desk for IPEL Ltd. Hackathon MVP. **All data is fictitious.**
 
-First, run the development server:
+Database, rules and seed data live in Supabase; see [DATABASE.md](DATABASE.md).
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Setup
+
+1. Copy `.env.example` to `.env.local` and fill in the Supabase URL, anon key, service role key and Anthropic key.
+2. `npm install`
+3. `npm run dev` and open http://localhost:3000
+
+Regenerate database types after any schema change:
+
+```
+npx supabase gen types typescript --project-id exohewumjfufufahiclt > src/lib/database.types.ts
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Demo logins
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Password for all five: `IpelDemo#2026`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Role | Email |
+|---|---|
+| owner | ram.prasad@example.com |
+| tender | tender@example.com |
+| purchase | purchase@example.com |
+| accounts | accounts@example.com |
+| logistics | logistics@example.com |
 
-## Learn More
+## Tests
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `npm run test`: Vitest unit tests
+- `npm run test:e2e`: Playwright smoke suite. Set `PLAYWRIGHT_BASE_URL` to run against a Vercel preview; otherwise it builds and starts locally. Set `PW_CHANNEL=msedge` to use installed Edge instead of bundled Chromium.
