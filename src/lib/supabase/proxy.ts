@@ -2,7 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/lib/database.types";
 
-const PUBLIC_PATHS = ["/login"];
+// "/" is the sign-in page. It stays reachable when signed in so users can switch accounts.
+const SIGN_IN_PATH = "/";
 
 // Refreshes the Supabase session cookie on every request and gates the app behind login.
 export async function updateSession(request: NextRequest) {
@@ -31,18 +32,12 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { pathname } = request.nextUrl;
-  const isPublic = PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
-
-  if (!user && !isPublic) return redirectTo(request, "/login");
-  if (user && isPublic) return redirectTo(request, "/");
+  if (!user && request.nextUrl.pathname !== SIGN_IN_PATH) {
+    const url = request.nextUrl.clone();
+    url.pathname = SIGN_IN_PATH;
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
 
   return response;
-}
-
-function redirectTo(request: NextRequest, pathname: string) {
-  const url = request.nextUrl.clone();
-  url.pathname = pathname;
-  url.search = "";
-  return NextResponse.redirect(url);
 }

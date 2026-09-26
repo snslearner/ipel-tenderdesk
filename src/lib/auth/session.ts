@@ -7,13 +7,14 @@ import { withJwtSkewRetry } from "@/lib/auth/jwt-skew-retry";
 
 export type SessionUser = { id: string; email: string; fullName: string; role: Role | null };
 
+// Signed-in user, or null when there is no session.
 // Role comes from the database (fn_my_role), never from client state.
-export const getSessionUser = cache(async (): Promise<SessionUser> => {
+export const getOptionalSessionUser = cache(async (): Promise<SessionUser | null> => {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  if (!user) return null;
 
   const [profileRes, roleRes] = await Promise.all([
     withJwtSkewRetry(() =>
@@ -31,3 +32,10 @@ export const getSessionUser = cache(async (): Promise<SessionUser> => {
     role: isRole(roleRes.data) ? roleRes.data : null,
   };
 });
+
+// For app pages: sends signed-out visitors to the sign-in page at "/".
+export async function getSessionUser(): Promise<SessionUser> {
+  const user = await getOptionalSessionUser();
+  if (!user) redirect("/");
+  return user;
+}

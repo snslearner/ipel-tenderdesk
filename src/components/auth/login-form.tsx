@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { loginSchema, type LoginInput } from "@/lib/auth/login-schema";
-import { signIn } from "./actions";
+import { signIn } from "@/lib/auth/actions";
 
 // Fictitious demo accounts; the shared password is documented in DATABASE.md.
 const DEMO_PASSWORD = "IpelDemo#2026";

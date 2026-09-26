@@ -13,10 +13,16 @@ describe("nav", () => {
     expect(MOBILE_MORE.map((i) => i.label)).toEqual(["Vendors", "Clients", "Products", "Settings"]);
   });
 
+  it("sends Dashboard to /dashboard, not the sign-in page at /", () => {
+    expect(NAV_ITEMS[0]).toMatchObject({ label: "Dashboard", href: "/dashboard" });
+  });
+
   it("matches the active route", () => {
     expect(isActive("/", "/")).toBe(true);
     expect(isActive("/tenders", "/")).toBe(false);
     expect(isActive("/tenders", "/tenders")).toBe(true);
+    expect(isActive("/dashboard", "/dashboard")).toBe(true);
+    expect(isActive("/", "/dashboard")).toBe(false);
     expect(isActive("/tenders/abc", "/tenders")).toBe(true);
     expect(isActive("/tendersx", "/tenders")).toBe(false);
   });
