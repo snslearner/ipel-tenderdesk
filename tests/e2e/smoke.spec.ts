@@ -31,6 +31,16 @@ test("wrong password shows the Supabase error", async ({ page }) => {
   await expect(page.getByTestId("login-error")).toContainText(/invalid/i);
 });
 
+test("tapping a demo user signs in immediately", async ({ page }) => {
+  await page.goto("/login");
+  await expect(page.getByText("Demo only: all data is fictitious.")).toBeVisible();
+  await page.getByRole("button", { name: /Ram Prasad/ }).click();
+  await page.waitForURL("/");
+  const badge = page.getByTestId("current-user").filter({ visible: true }).first();
+  await expect(badge).toContainText("Ram Prasad");
+  await expect(badge.getByTestId("current-role")).toHaveText("Owner");
+});
+
 const USERS = [
   { email: "ram.prasad@example.com", name: "Ram Prasad", role: "Owner" },
   { email: "tender@example.com", name: "Anita Kulkarni", role: "Tender" },

@@ -23,27 +23,29 @@ const DEMO_USERS = [
 export function LoginForm() {
   const [serverError, setServerError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [demoEmail, setDemoEmail] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
-    setValue,
     formState: { errors },
   } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "" },
   });
 
-  const onSubmit = handleSubmit((values) => {
+  function submit(values: LoginInput, demo: string | null = null) {
     setServerError(null);
+    setDemoEmail(demo);
     startTransition(async () => {
       const result = await signIn(values);
       if (result?.error) setServerError(result.error);
     });
-  });
+  }
 
-  function fillDemo(email: string) {
-    setValue("email", email, { shouldValidate: true });
-    setValue("password", DEMO_PASSWORD, { shouldValidate: true });
+  const onSubmit = handleSubmit((values) => submit(values));
+
+  function signInAsDemo(email: string) {
+    submit({ email, password: DEMO_PASSWORD }, email);
   }
 
   return (
@@ -74,32 +76,40 @@ export function LoginForm() {
               </p>
             )}
             <Button type="submit" className="w-full" disabled={pending}>
-              {pending ? "Signing in…" : "Sign in"}
+              {pending && !demoEmail ? "Signing in…" : "Sign in"}
             </Button>
           </form>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">Demo accounts</CardTitle>
-          <CardDescription>Fictitious users. Tap one to fill the form.</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-2">
-          {DEMO_USERS.map((u) => (
-            <Button
-              key={u.email}
-              type="button"
-              variant="outline"
-              className="h-auto justify-between py-2"
-              onClick={() => fillDemo(u.email)}
-            >
-              <span className="truncate">{u.name}</span>
-              <span className="text-xs text-muted-foreground">{u.role}</span>
-            </Button>
-          ))}
-        </CardContent>
-      </Card>
+      <div className="space-y-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Demo accounts</CardTitle>
+            <CardDescription>Tap a user to sign in as them.</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-2">
+            {DEMO_USERS.map((u) => (
+              <Button
+                key={u.email}
+                type="button"
+                variant="outline"
+                className="h-auto justify-between py-2"
+                disabled={pending}
+                onClick={() => signInAsDemo(u.email)}
+              >
+                <span className="truncate">{u.name}</span>
+                <span className="text-xs text-muted-foreground">
+                  {pending && demoEmail === u.email ? "Signing in…" : u.role}
+                </span>
+              </Button>
+            ))}
+          </CardContent>
+        </Card>
+        <p className="text-center text-xs text-muted-foreground">
+          Demo only: all data is fictitious.
+        </p>
+      </div>
     </div>
   );
 }
