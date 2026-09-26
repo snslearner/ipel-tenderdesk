@@ -3,7 +3,7 @@ import { AUTH_FILE, expectNoHorizontalScroll, poIdByNumber, resetLockedPo } from
 
 // Desktop and mobile run in parallel; each project uses its own seeded locked PO
 // so the release test never races the other project.
-const LOCKED_PO = { desktop: "PO/DMSP/2026/1020", mobile: "PO/NSPW/2026/1021" } as const;
+const LOCKED_PO = { desktop: "PO/ADS/2026/1020", mobile: "PO/DMSP/2026/1021" } as const;
 const lockedPo = (project: string) => LOCKED_PO[project as keyof typeof LOCKED_PO];
 
 async function openTab(page: Page, name: string) {
@@ -78,16 +78,16 @@ test.describe.serial("locked PO", () => {
 
 test.describe("as tender team", () => {
   test.use({ storageState: AUTH_FILE.tender });
-  test("extension letter for PO/NSPW/2026/1011 is visible and printable", async ({ page }) => {
-    await page.goto(`/orders/${await poIdByNumber("PO/NSPW/2026/1011")}`);
+  test("extension letter for PO/DMSP/2026/1011 is visible and printable", async ({ page }) => {
+    await page.goto(`/orders/${await poIdByNumber("PO/DMSP/2026/1011")}`);
     await openTab(page, "Extension");
     const letter = page.getByTestId("letter-text").first();
     await expect(letter).toContainText("Request for extension of delivery period");
-    await expect(letter).toContainText("PO/NSPW/2026/1011");
+    await expect(letter).toContainText("PO/DMSP/2026/1011");
 
     await page.getByRole("link", { name: "Print view" }).first().click();
     const printed = page.getByTestId("print-letter");
-    await expect(printed).toContainText("PO/NSPW/2026/1011");
+    await expect(printed).toContainText("PO/DMSP/2026/1011");
     await page.evaluate(() => {
       (window as unknown as { printCalls: number }).printCalls = 0;
       window.print = () => {
@@ -109,8 +109,8 @@ test.describe("as tender team", () => {
 
 test.describe("as accounts", () => {
   test.use({ storageState: AUTH_FILE.accounts });
-  test("PO/ADS/2025/1003 shows Ready to claim with every document on file", async ({ page }) => {
-    await page.goto(`/orders/${await poIdByNumber("PO/ADS/2025/1003")}`);
+  test("PO/NSPW/2025/1003 shows Ready to claim with every document on file", async ({ page }) => {
+    await page.goto(`/orders/${await poIdByNumber("PO/NSPW/2025/1003")}`);
     await openTab(page, "Invoice");
     const checklist = page.getByTestId("payment-checklist");
     await expect(checklist.getByTestId("ready-to-claim")).toHaveText("Ready to claim");
@@ -131,7 +131,7 @@ test.describe("as accounts", () => {
     await page.getByRole("button", { name: "Clear filters" }).click();
     await page.getByRole("searchbox", { name: "Search orders" }).fill("1003");
     await expect(rows).toHaveCount(1);
-    await expect(rows.first()).toContainText("PO/ADS/2025/1003");
+    await expect(rows.first()).toContainText("PO/NSPW/2025/1003");
     await expect(rows.first()).toContainText("Ready to claim");
     await expectNoHorizontalScroll(page);
   });

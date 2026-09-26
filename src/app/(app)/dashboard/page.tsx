@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate, formatINRCompact, formatPct, todayIST } from "@/lib/format";
 import { roleLabel } from "@/lib/auth/roles";
+import { OPEN_STATUSES } from "@/lib/tenders";
 import { Badge } from "@/components/ui/badge";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { AgeingChart } from "@/components/dashboard/ageing-chart";
@@ -18,7 +19,7 @@ export default async function DashboardPage() {
   const refresh = await supabase.rpc("fn_refresh_alerts");
 
   const today = todayIST();
-  const [kpiRes, remRes] = await Promise.all([
+  const [kpiRes, remRes, unpricedRes] = await Promise.all([
     supabase.from("v_dashboard_kpis").select("*").single(),
     supabase
       .from("reminders")
@@ -27,9 +28,16 @@ export default async function DashboardPage() {
       .lte("due_on", today)
       .order("due_on", { ascending: true })
       .limit(50),
+    // Open tenders with no bid value yet (no priced lines): they add nothing to the pipeline value.
+    supabase
+      .from("v_tender_summary")
+      .select("id", { count: "exact", head: true })
+      .in("status", OPEN_STATUSES)
+      .or("total_bid.is.null,total_bid.eq.0"),
   ]);
   if (kpiRes.error) throw new Error(`Could not load dashboard figures: ${kpiRes.error.message}`);
   if (remRes.error) throw new Error(`Could not load reminders: ${remRes.error.message}`);
+  if (unpricedRes.error) throw new Error(`Could not load tender counts: ${unpricedRes.error.message}`);
   const k = kpiRes.data;
   const reminders = remRes.data;
 
@@ -64,7 +72,7 @@ export default async function DashboardPage() {
           testId="kpi-pipeline"
           label="Bid pipeline"
           value={formatINRCompact(k.bid_pipeline_value)}
-          sub={`${count(k.open_tenders)} open · ${count(k.awaiting_owner_approval)} awaiting approval`}
+          sub={`${count(k.open_tenders)} open (${count(unpricedRes.count)} not yet priced) · ${count(k.awaiting_owner_approval)} awaiting approval`}
           href="/tenders?status=open"
         />
         <KpiCard

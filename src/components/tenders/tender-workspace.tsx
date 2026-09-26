@@ -6,8 +6,12 @@ import { ItemsTab, type ItemRow, type VendorOption } from "./items-tab";
 import { ChecklistTab, type ChecklistRow } from "./checklist-tab";
 import { GuaranteesTab, type GuaranteeRow } from "./guarantees-tab";
 import { HistoryTab, type HistoryRow } from "./history-tab";
+import { AiChecklistTab } from "./ai-checklist-tab";
+import { canEditItems } from "@/lib/tenders";
 
 type Props = {
+  tenderId: string;
+  userId: string;
   status: TenderStatus;
   items: ItemRow[];
   checklist: ChecklistRow[];
@@ -16,7 +20,7 @@ type Props = {
   history: HistoryRow[];
 };
 
-export function TenderWorkspace({ status, items, checklist, guarantees, vendors, history }: Props) {
+export function TenderWorkspace({ tenderId, userId, status, items, checklist, guarantees, vendors, history }: Props) {
   const open = checklist.filter((c) => !c.done).length;
   return (
     <Tabs defaultValue="items" className="min-w-0">
@@ -26,6 +30,7 @@ export function TenderWorkspace({ status, items, checklist, guarantees, vendors,
           <TabsTrigger value="checklist">Checklist{open ? ` (${open} open)` : ""}</TabsTrigger>
           <TabsTrigger value="guarantees">Guarantees ({guarantees.length})</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
+          <TabsTrigger value="ai">AI checklist</TabsTrigger>
         </TabsList>
       </div>
       <TabsContent value="items" className="pt-3">
@@ -39,6 +44,14 @@ export function TenderWorkspace({ status, items, checklist, guarantees, vendors,
       </TabsContent>
       <TabsContent value="history" className="pt-3">
         <HistoryTab items={items} history={history} />
+      </TabsContent>
+      <TabsContent value="ai" className="pt-3">
+        <AiChecklistTab
+          tenderId={tenderId}
+          userId={userId}
+          nextLineNo={items.reduce((m, i) => Math.max(m, i.line_no), 0) + 1}
+          canAddItems={canEditItems(status)}
+        />
       </TabsContent>
     </Tabs>
   );

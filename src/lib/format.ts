@@ -54,3 +54,13 @@ export function formatDate(value: string | null | undefined): string {
 export function todayIST(now: Date = new Date()): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(now);
 }
+
+export type Expiry = "expired" | "soon" | "ok" | "none";
+
+// Certificates and guarantees: "soon" = valid_until within the next 30 days (inclusive).
+export function expiryState(validUntil: string | null | undefined, today: string = todayIST()): Expiry {
+  if (!validUntil) return "none";
+  if (validUntil < today) return "expired";
+  const days = (Date.parse(`${validUntil}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86_400_000;
+  return days <= 30 ? "soon" : "ok";
+}

@@ -115,6 +115,8 @@ export default async function TenderPage({ params }: PageProps<"/tenders/[id]">)
       </header>
 
       <TenderWorkspace
+        tenderId={t.id}
+        userId={user.id}
         status={t.status}
         items={items}
         checklist={checkRes.data ?? []}

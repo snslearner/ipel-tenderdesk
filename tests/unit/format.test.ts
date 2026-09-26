@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatDate, formatINR, formatINRCompact, formatPct, todayIST } from "@/lib/format";
+import { expiryState, formatDate, formatINR, formatINRCompact, formatPct, todayIST } from "@/lib/format";
 
 describe("formatINR", () => {
   it("uses Indian digit grouping", () => {
@@ -52,5 +52,18 @@ describe("todayIST", () => {
     // 20:00 UTC on 26 Sep is 01:30 IST on 27 Sep.
     expect(todayIST(new Date("2026-09-26T20:00:00Z"))).toBe("2026-09-27");
     expect(todayIST(new Date("2026-09-26T10:00:00Z"))).toBe("2026-09-26");
+  });
+});
+
+describe("expiryState", () => {
+  const today = "2026-09-26";
+  it("flags within 30 days (inclusive) as soon", () => {
+    expect(expiryState("2026-09-26", today)).toBe("soon");
+    expect(expiryState("2026-10-26", today)).toBe("soon");
+    expect(expiryState("2026-10-27", today)).toBe("ok");
+  });
+  it("handles expired and missing dates", () => {
+    expect(expiryState("2026-09-25", today)).toBe("expired");
+    expect(expiryState(null, today)).toBe("none");
   });
 });

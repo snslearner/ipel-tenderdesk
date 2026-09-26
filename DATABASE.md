@@ -39,9 +39,10 @@ Money is numeric (INR). Format with `Intl.NumberFormat('en-IN', { style: 'curren
 | Action | Call | Who |
 |---|---|---|
 | Approve bid | `rpc('approve_tender', { p_tender_id, p_comment })` | owner |
-| Return bid to team | `rpc('return_tender', { p_tender_id, p_comment })` | owner |
+| Return bid to team | `rpc('return_tender', { p_tender_id, p_comment })` — also clears the approval, so a re-sent bid needs approving again | owner |
 | Acknowledge client PO | `rpc('acknowledge_po', { p_po_id })` | owner |
 | Release PO lock | `rpc('release_po_lock', { p_po_id })` — only after every open `po_discrepancies` row has `amendment_ref` | owner |
+| Record a dispatch | `rpc('record_dispatch', { p_po_id, p_dc_number, p_dispatched_on, p_signed, p_lines: [{ client_po_item_id, qty }] })` — challan and lines in one transaction; returns the dispatch id | anyone |
 | Refresh alerts | `rpc('fn_refresh_alerts')` — call on dashboard load; idempotent; creates extension-letter drafts + reminders | anyone |
 
 Everything else is plain insert/update on tables (all signed-in users have full access via RLS).
@@ -67,13 +68,13 @@ Client PO: received → (locked ⇄ received) → acknowledged → in_execution 
 Table `documents` (entity_type: tender | client_po | dispatch | vendor | company; doc_type: bid_copy | po | invoice | dc | tender_doc | certificate | amendment | other). Private storage bucket `documents`. Seeded document rows point to `demo/...` paths with NO real files behind them — show them as "on file (demo)" and do not try to download them.
 
 ## Seed data (all fictitious)
-5 clients · 20 OEMs, 15 suppliers, 10 subcontractors · 120 part numbers with price history · 158 tenders (22 won, 110 lost, 8 cancelled, 6 not materialised, 12 open; 1–45 lines each; FY win rate ≈15%) · 22 client POs covering every stage: 2 locked (PO/DMSP/2026/1020 qty mismatch, PO/NSPW/2026/1021 price and due-date mismatch), 3 due within 45 days, 2 overdue with LD building, 1 late delivery with LD deducted, 4 part-paid, 2 ready to claim, 2 closed · reminders and 4 extension drafts already generated.
+5 clients · 20 OEMs, 15 suppliers, 10 subcontractors · 120 part numbers with price history · 158 tenders (22 won, 110 lost, 8 cancelled, 6 not materialised, 12 open; 1–45 lines each; FY win rate ≈15%) · 22 client POs covering every stage: 2 locked (PO/ADS/2026/1020 qty mismatch, PO/DMSP/2026/1021 price and due-date mismatch), 3 due within 45 days, 2 overdue with LD building, 1 late delivery with LD deducted, 4 part-paid, 2 ready to claim, 2 closed · reminders and 4 extension drafts already generated.
 Sample values, label them "sample" in the UI: LD 0.5%/week capped at 10% (1%/5% on some tenders), PBG 10% of PO, EMD 2% of bid, TDS 1%, GST-TDS 2%, extension trigger 45 days before due.
 
 ## Demo-ready records
-- Locked PO to show amendment → release: **PO/DMSP/2026/1020**
-- Extension draft to show: **PO/NSPW/2026/1011** (due in 15 days, one vendor late)
-- Overdue with LD accruing: **PO/DMSP/2025/1015**
-- Ready to claim: **PO/ADS/2025/1003**, **PO/KPI/2025/1004**
-- Missing payment documents: **PO/ADS/2026/1008** (invoice copy + one unsigned challan)
+- Locked PO to show amendment → release: **PO/ADS/2026/1020**
+- Extension draft to show: **PO/DMSP/2026/1011** (due in 15 days, one vendor late)
+- Overdue with LD accruing: **PO/ADS/2025/1015**
+- Ready to claim: **PO/NSPW/2025/1003**, **PO/SAL/2025/1004**
+- Missing payment documents: **PO/NSPW/2026/1008** (invoice copy + one unsigned challan)
 - Bids waiting for owner approval: 2 tenders in `owner_review` (one with 40 lines)

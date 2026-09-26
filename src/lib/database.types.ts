@@ -1722,6 +1722,16 @@ export type Database = {
         Args: { p_delivered: string; p_due: string }
         Returns: number
       }
+      record_dispatch: {
+        Args: {
+          p_dc_number: string
+          p_dispatched_on: string
+          p_lines: Json
+          p_po_id: string
+          p_signed: boolean
+        }
+        Returns: string
+      }
       release_po_lock: { Args: { p_po_id: string }; Returns: undefined }
       return_tender: {
         Args: { p_comment: string; p_tender_id: string }

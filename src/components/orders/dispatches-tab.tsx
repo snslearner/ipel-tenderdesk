@@ -88,26 +88,19 @@ function NewDispatch({ po, lines, blocked }: { po: PoSummary; lines: LineRow[]; 
   const invalid = items.some((i) => Number.isNaN(i.qty)) || !dc.trim() || items.length === 0;
 
   function submit() {
-    const supabase = createClient();
     startTransition(async () => {
-      // The database refuses a dispatch unless the PO is acknowledged or in execution,
-      // and refuses any line qty above what is pending. Its message is shown as-is.
-      const head = await supabase
-        .from("dispatches")
-        .insert({ client_po_id: po.id, dc_number: dc.trim(), dispatched_on: date, signed_sealed_stamped: sss })
-        .select("id")
-        .single();
-      if (head.error) {
-        toast.error(head.error.message);
-        return;
-      }
-      const lineRes = await supabase
-        .from("dispatch_items")
-        .insert(items.map((i) => ({ ...i, dispatch_id: head.data.id })));
-      if (lineRes.error) {
-        // Two inserts, not one transaction: undo the challan header if its lines were refused.
-        await supabase.from("dispatches").delete().eq("id", head.data.id);
-        toast.error(lineRes.error.message);
+      // One transaction: challan and lines are saved together or not at all. The database
+      // refuses a dispatch unless the PO is acknowledged or in execution, and any line qty
+      // above what is pending. Its message is shown as-is.
+      const { error } = await createClient().rpc("record_dispatch", {
+        p_po_id: po.id,
+        p_dc_number: dc.trim(),
+        p_dispatched_on: date,
+        p_signed: sss,
+        p_lines: items,
+      });
+      if (error) {
+        toast.error(error.message);
         return;
       }
       toast.success(`Dispatch ${dc.trim()} recorded`);
