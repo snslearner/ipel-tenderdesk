@@ -28,7 +28,7 @@ test("wrong password shows the Supabase error", async ({ page }) => {
   await page.getByLabel("Email").fill("tender@example.com");
   await page.getByLabel("Password").fill("wrong-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page.getByRole("alert")).toContainText(/invalid/i);
+  await expect(page.getByTestId("login-error")).toContainText(/invalid/i);
 });
 
 const USERS = [

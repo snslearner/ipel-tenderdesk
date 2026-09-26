@@ -17,6 +17,8 @@ export async function signIn(input: LoginInput): Promise<{ error: string }> {
 
 export async function signOut() {
   const supabase = await createClient();
-  await supabase.auth.signOut();
+  // Local scope: end only this browser session, not every session of this user
+  // (demo accounts are shared, so a global sign-out would log everyone out).
+  await supabase.auth.signOut({ scope: "local" });
   redirect("/login");
 }

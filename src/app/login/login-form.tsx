@@ -69,7 +69,7 @@ export function LoginForm() {
               )}
             </div>
             {serverError && (
-              <p role="alert" className="text-sm text-destructive">
+              <p role="alert" data-testid="login-error" className="text-sm text-destructive">
                 {serverError}
               </p>
             )}
