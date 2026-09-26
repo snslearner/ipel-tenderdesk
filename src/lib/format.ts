@@ -64,3 +64,10 @@ export function expiryState(validUntil: string | null | undefined, today: string
   const days = (Date.parse(`${validUntil}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86_400_000;
   return days <= 30 ? "soon" : "ok";
 }
+
+// YYYY-MM-DD plus n calendar days.
+export function addDaysISO(date: string, n: number): string {
+  const d = new Date(`${date}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { expiryState, formatDate, formatINR, formatINRCompact, formatPct, todayIST } from "@/lib/format";
+import { addDaysISO, expiryState, formatDate, formatINR, formatINRCompact, formatPct, todayIST } from "@/lib/format";
 
 describe("formatINR", () => {
   it("uses Indian digit grouping", () => {
@@ -65,5 +65,12 @@ describe("expiryState", () => {
   it("handles expired and missing dates", () => {
     expect(expiryState("2026-09-25", today)).toBe("expired");
     expect(expiryState(null, today)).toBe("none");
+  });
+});
+
+describe("addDaysISO", () => {
+  it("adds calendar days across month ends", () => {
+    expect(addDaysISO("2026-09-26", 7)).toBe("2026-10-03");
+    expect(addDaysISO("2026-12-30", 3)).toBe("2027-01-02");
   });
 });

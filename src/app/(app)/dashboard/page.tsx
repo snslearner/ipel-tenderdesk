@@ -3,10 +3,11 @@ import Link from "next/link";
 import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { refreshAlertsThrottled } from "@/lib/alerts-refresh";
-import { formatDate, formatINRCompact, formatPct, todayIST } from "@/lib/format";
-import { roleLabel } from "@/lib/auth/roles";
-import { OPEN_STATUSES } from "@/lib/tenders";
-import { Badge } from "@/components/ui/badge";
+import { addDaysISO, formatDate, formatINRCompact, formatPct, todayIST } from "@/lib/format";
+import { getSessionUser } from "@/lib/auth/session";
+import { OPEN_STATUSES, SOURCE_LABEL, followUpChannel } from "@/lib/tenders";
+import { FollowUpsPanel, type FollowUp } from "@/components/crm/follow-ups-panel";
+import { AddCustomerButton } from "@/components/crm/add-customer-dialog";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { AgeingChart } from "@/components/dashboard/ageing-chart";
 
@@ -26,7 +27,8 @@ export default async function DashboardPage() {
   if (accessToken) after(() => refreshAlertsThrottled(accessToken));
 
   const today = todayIST();
-  const [kpiRes, remRes, unpricedRes] = await Promise.all([
+  const [user, kpiRes, remRes, unpricedRes, dueRes, doneRes] = await Promise.all([
+    getSessionUser(),
     supabase.from("v_dashboard_kpis").select("*").single(),
     supabase
       .from("reminders")
@@ -34,19 +36,49 @@ export default async function DashboardPage() {
       .eq("status", "open")
       .lte("due_on", today)
       .order("due_on", { ascending: true })
-      .limit(50),
+      .order("id")
+      .limit(100),
     // Open tenders with no bid value yet (no priced lines): they add nothing to the pipeline value.
     supabase
       .from("v_tender_summary")
       .select("id", { count: "exact", head: true })
       .in("status", OPEN_STATUSES)
       .or("total_bid.is.null,total_bid.eq.0"),
+    // Bids not yet submitted whose submission is due within 7 days (or already past due).
+    supabase
+      .from("v_tender_summary")
+      .select("id, ref_no, title, client_name, source, submission_due")
+      .in("status", ["identified", "evaluation", "preparation", "owner_review"])
+      .lte("submission_due", addDaysISO(today, 7))
+      .order("submission_due"),
+    // Tender follow-ups already marked done today.
+    supabase.from("reminders").select("entity_id").eq("kind", "tender_followup").eq("status", "done").eq("due_on", today),
   ]);
   if (kpiRes.error) throw new Error(`Could not load dashboard figures: ${kpiRes.error.message}`);
   if (remRes.error) throw new Error(`Could not load reminders: ${remRes.error.message}`);
+  for (const r of [dueRes, doneRes]) if (r.error) throw new Error(`Could not load follow-ups: ${r.error.message}`);
   if (unpricedRes.error) throw new Error(`Could not load tender counts: ${unpricedRes.error.message}`);
   const k = kpiRes.data;
-  const reminders = remRes.data;
+
+  // Owner sees everyone's reminders; other roles see their own and unassigned ones.
+  const doneToday = new Set(doneRes.data!.map((d) => d.entity_id));
+  const followUps: FollowUp[] = [
+    ...remRes.data
+      .filter((r) => user.role === "owner" || !user.role || r.assignee_role === user.role || r.assignee_role === null)
+      .map((r) => ({ kind: "reminder" as const, id: r.id, text: r.text, due: r.due_on, channel: r.channel, role: r.assignee_role })),
+    ...dueRes
+      .data!.filter((t) => t.id && t.submission_due && !doneToday.has(t.id))
+      .map((t) => ({
+        kind: "tender" as const,
+        id: t.id!,
+        ref: t.ref_no ?? "",
+        title: t.title ?? "",
+        client: t.client_name ?? "",
+        due: t.submission_due!,
+        channel: followUpChannel(t.source!),
+        source: SOURCE_LABEL[t.source!],
+      })),
+  ].sort((a, b) => a.due.localeCompare(b.due));
 
   const ageing = [
     { bucket: "0–30", amount: k.ar_0_30 ?? 0 },
@@ -57,10 +89,15 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h1 className="text-xl font-semibold tracking-tight">Dashboard</h1>
-        <span className="text-xs text-muted-foreground">FY from {formatDate(k.fy_start)}</span>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h1 className="text-xl font-semibold tracking-tight">Dashboard</h1>
+          <span className="text-xs text-muted-foreground">FY from {formatDate(k.fy_start)}</span>
+        </div>
+        <AddCustomerButton variant="outline" />
       </div>
+
+      <FollowUpsPanel items={followUps} today={today} role={user.role} />
 
       <section aria-label="Key figures" className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard
@@ -169,41 +206,6 @@ export default async function DashboardPage() {
         />
       </section>
 
-      <section aria-labelledby="needs-you" className="space-y-3" data-testid="needs-you-today">
-        <div className="flex items-baseline justify-between gap-2">
-          <h2 id="needs-you" className="text-base font-semibold">
-            Needs you today
-          </h2>
-          <Link href="/reminders" className="text-xs font-medium underline underline-offset-4">
-            All reminders
-          </Link>
-        </div>
-        {reminders.length === 0 ? (
-          <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-            Nothing due today.
-          </div>
-        ) : (
-          <ul className="divide-y rounded-xl border bg-card">
-            {reminders.map((r) => {
-              const overdue = r.due_on < today;
-              return (
-                <li key={r.id} className="flex flex-col gap-1 p-3 sm:flex-row sm:items-start sm:gap-3">
-                  <p className="min-w-0 flex-1 text-sm break-words">{r.text}</p>
-                  <div className="flex shrink-0 flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-                    {overdue ? (
-                      <Badge variant="destructive">Overdue · {formatDate(r.due_on)}</Badge>
-                    ) : (
-                      <Badge variant="outline">Today</Badge>
-                    )}
-                    {r.assignee_role && <Badge variant="secondary">{roleLabel(r.assignee_role)}</Badge>}
-                    <span className="capitalize">{r.channel}</span>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
     </div>
   );
 }

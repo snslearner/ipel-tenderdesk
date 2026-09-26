@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowDown, ArrowUp, Search } from "lucide-react";
+import { ArrowDown, ArrowUp, Columns3, List, Search } from "lucide-react";
 import {
   createColumnHelper,
   createSortedRowModel,
@@ -13,15 +13,20 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { formatDate, formatINR, formatINRCompact, formatPct } from "@/lib/format";
 import {
+  ENQUIRY_SOURCES,
+  SOURCE_LABEL,
   STATUS_LABEL,
   TENDER_STATUSES,
   filterTenders,
   tenderFiltersToQuery,
   type TenderFilters,
+  type TenderSource,
   type TenderStatus,
 } from "@/lib/tenders";
+import { TenderBoard } from "./tender-board";
 import { Chip, EmptyState } from "@/components/list-bits";
 import { StatusBadge } from "./status-badge";
 
@@ -32,6 +37,7 @@ export type TenderRow = {
   client_id: string;
   client_name: string;
   status: TenderStatus;
+  source: TenderSource;
   submission_due: string | null;
   total_bid: number | null;
   margin_pct: number | null;
@@ -53,6 +59,14 @@ const columns = col.columns([
   }),
   col.accessor("title", { header: "Title", cell: (c) => <span className="line-clamp-2">{c.getValue()}</span> }),
   col.accessor("client_name", { header: "Client" }),
+  col.accessor("source", {
+    header: "Source",
+    cell: (c) => (
+      <Badge variant="outline" data-testid="source-badge">
+        {SOURCE_LABEL[c.getValue()]}
+      </Badge>
+    ),
+  }),
   col.accessor("status", {
     header: "Status",
     cell: (c) => <StatusBadge status={c.getValue()} />,
@@ -101,13 +115,34 @@ export function TenderRegister({ rows, clients, initialFilters }: Props) {
     return c;
   }, [rows]);
 
-  const visible = useMemo(() => filterTenders(rows, filters), [rows, filters]);
+  const board = filters.view === "board";
+  // The board shows every stage as a column, so status chips do not apply there.
+  const visible = useMemo(() => filterTenders(rows, board ? { ...filters, statuses: [] } : filters), [rows, filters, board]);
   const table = useTable({ features, columns, data: visible });
   const sortedRows = table.getRowModel().rows;
-  const hasFilters = filters.statuses.length > 0 || !!filters.client || !!filters.q;
+  const hasFilters = (!board && filters.statuses.length > 0) || !!filters.client || !!filters.source || !!filters.q;
 
   return (
     <div className="space-y-4">
+      <div className="inline-flex rounded-lg border p-0.5" role="group" aria-label="View">
+        {(["list", "board"] as const).map((v) => (
+          <button
+            key={v}
+            type="button"
+            aria-pressed={filters.view === v}
+            onClick={() => update({ ...filters, view: v })}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-md px-3 py-1 text-sm",
+              filters.view === v ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {v === "list" ? <List className="size-4" /> : <Columns3 className="size-4" />}
+            {v === "list" ? "List" : "Board"}
+          </button>
+        ))}
+      </div>
+
+      {!board && (
       <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by status">
         <Chip active={filters.statuses.length === 0} onClick={() => update({ ...filters, statuses: [] })}>
           All <span className="text-muted-foreground">{rows.length}</span>
@@ -118,6 +153,7 @@ export function TenderRegister({ rows, clients, initialFilters }: Props) {
           </Chip>
         ))}
       </div>
+      )}
 
       <div className="flex flex-col gap-2 sm:flex-row">
         <div className="relative min-w-0 flex-1">
@@ -144,6 +180,19 @@ export function TenderRegister({ rows, clients, initialFilters }: Props) {
             </option>
           ))}
         </select>
+        <select
+          aria-label="Filter by source"
+          className="h-8 min-w-0 rounded-lg border border-input bg-transparent px-2.5 text-sm sm:w-44"
+          value={filters.source}
+          onChange={(e) => update({ ...filters, source: e.target.value as TenderSource | "" })}
+        >
+          <option value="">All sources</option>
+          {[...ENQUIRY_SOURCES, "defence_portal" as const].map((src) => (
+            <option key={src} value={src}>
+              {SOURCE_LABEL[src]}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
@@ -151,7 +200,7 @@ export function TenderRegister({ rows, clients, initialFilters }: Props) {
           Showing {visible.length} of {rows.length}
         </span>
         {hasFilters && (
-          <Button variant="ghost" size="sm" onClick={() => update({ statuses: [], client: "", q: "" })}>
+          <Button variant="ghost" size="sm" onClick={() => update({ statuses: [], client: "", source: "", q: "", view: filters.view })}>
             Clear filters
           </Button>
         )}
@@ -161,6 +210,8 @@ export function TenderRegister({ rows, clients, initialFilters }: Props) {
         <EmptyState>No tenders yet.</EmptyState>
       ) : visible.length === 0 ? (
         <EmptyState>No tenders match these filters.</EmptyState>
+      ) : board ? (
+        <TenderBoard rows={visible} />
       ) : (
         <>
           {/* Wide screens: sortable table */}
@@ -217,7 +268,12 @@ export function TenderRegister({ rows, clients, initialFilters }: Props) {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <span className="font-medium whitespace-nowrap">{t.ref_no}</span>
-                    <StatusBadge status={t.status} />
+                    <span className="flex flex-wrap justify-end gap-1">
+                      <Badge variant="outline" data-testid="source-badge">
+                        {SOURCE_LABEL[t.source]}
+                      </Badge>
+                      <StatusBadge status={t.status} />
+                    </span>
                   </div>
                   <p className="line-clamp-2 text-sm">{t.title}</p>
                   <p className="truncate text-xs text-muted-foreground">{t.client_name}</p>

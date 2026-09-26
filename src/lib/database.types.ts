@@ -1764,6 +1764,9 @@ export type Database = {
         | "defence_portal"
         | "client_portal"
         | "client_email"
+        | "phone_call"
+        | "whatsapp"
+        | "referral"
       tender_status:
         | "identified"
         | "evaluation"
@@ -1935,6 +1938,9 @@ export const Constants = {
         "defence_portal",
         "client_portal",
         "client_email",
+        "phone_call",
+        "whatsapp",
+        "referral",
       ],
       tender_status: [
         "identified",

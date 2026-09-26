@@ -5,6 +5,7 @@ import { formatINRCompact } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/list-bits";
 import { CLIENT_TYPE_LABEL } from "@/components/masters/bits";
+import { AddCustomerButton } from "@/components/crm/add-customer-dialog";
 
 export const metadata: Metadata = { title: "Clients · IPEL TenderDesk" };
 
@@ -37,7 +38,10 @@ export default async function ClientsPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold tracking-tight">Clients</h1>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h1 className="text-xl font-semibold tracking-tight">Clients</h1>
+        <AddCustomerButton />
+      </div>
       {cRes.data!.length === 0 ? (
         <EmptyState>No clients yet.</EmptyState>
       ) : (

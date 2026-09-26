@@ -31,10 +31,8 @@ test.describe("as owner", () => {
     await expect(receivables.locator(".recharts-bar-rectangle")).toHaveCount(4);
 
     await expect(page.getByTestId("kpi-pipeline")).toHaveAttribute("href", "/tenders?status=open");
-    await expect(
-      page.getByTestId("needs-you-today").getByRole("heading", { name: "Needs you today" }),
-    ).toBeVisible();
-    await expect(page.getByTestId("needs-you-today").locator("li").first()).toBeVisible();
+    await expect(page.getByTestId("follow-ups").getByRole("heading", { name: /Follow-ups today/ })).toBeVisible();
+    await expect(page.getByTestId("follow-up").first()).toBeVisible();
     await expectNoHorizontalScroll(page);
   });
 });

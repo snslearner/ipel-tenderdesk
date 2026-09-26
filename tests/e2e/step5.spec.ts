@@ -26,7 +26,8 @@ test.describe("as tender team", () => {
 
   test("clients: list, then client with tenders and orders", async ({ page }) => {
     await page.goto("/clients");
-    await expect(page.getByTestId("client-card")).toHaveCount(5);
+    // At least the 5 seeded clients (the CRM test may be adding one in parallel).
+    await expect(page.getByTestId("client-card").nth(4)).toBeVisible();
     await page.getByTestId("client-card").first().click();
     await expect(page.getByTestId("client-name")).toBeVisible();
     await expect(page.getByTestId("client-orders").getByRole("heading")).toContainText("Orders");

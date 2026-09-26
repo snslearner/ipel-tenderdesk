@@ -67,13 +67,17 @@ describe("parseTenderFilters", () => {
   it("reads status list, client and search from the URL", () => {
     expect(
       parseTenderFilters({ status: "won,lost", client: "abc", q: " radiator " }),
-    ).toEqual({ statuses: ["won", "lost"], client: "abc", q: "radiator" });
+    ).toEqual({ statuses: ["won", "lost"], client: "abc", source: "", q: "radiator", view: "list" });
   });
   it("expands 'open' and drops unknown statuses", () => {
     expect(parseTenderFilters({ status: "open,bogus" }).statuses).toEqual(OPEN_STATUSES);
   });
   it("defaults to no filters", () => {
-    expect(parseTenderFilters({})).toEqual({ statuses: [], client: "", q: "" });
+    expect(parseTenderFilters({})).toEqual({ statuses: [], client: "", source: "", q: "", view: "list" });
+  });
+  it("reads source and board view, ignoring unknown sources", () => {
+    expect(parseTenderFilters({ source: "whatsapp", view: "board" })).toMatchObject({ source: "whatsapp", view: "board" });
+    expect(parseTenderFilters({ source: "fax" }).source).toBe("");
   });
   it("knows every database status", () => {
     expect(TENDER_STATUSES).toHaveLength(9);
@@ -82,11 +86,11 @@ describe("parseTenderFilters", () => {
 
 describe("filterTenders", () => {
   const rows = [
-    { ref_no: "TND-1", title: "Supply of Radiator Core", client_id: "a", status: "won" as const },
-    { ref_no: "TND-2", title: "Supply of Gear Pump", client_id: "b", status: "lost" as const },
-    { ref_no: "TND-3", title: "Radiator hoses", client_id: "b", status: "owner_review" as const },
+    { ref_no: "TND-1", title: "Supply of Radiator Core", client_id: "a", status: "won" as const, source: "gem" as const },
+    { ref_no: "TND-2", title: "Supply of Gear Pump", client_id: "b", status: "lost" as const, source: "whatsapp" as const },
+    { ref_no: "TND-3", title: "Radiator hoses", client_id: "b", status: "owner_review" as const, source: "whatsapp" as const },
   ];
-  const f = (x: Partial<TenderFilters>): TenderFilters => ({ statuses: [], client: "", q: "", ...x });
+  const f = (x: Partial<TenderFilters>): TenderFilters => ({ statuses: [], client: "", source: "", q: "", view: "list", ...x });
 
   it("returns everything with no filters", () => {
     expect(filterTenders(rows, f({}))).toHaveLength(3);
@@ -98,8 +102,11 @@ describe("filterTenders", () => {
     expect(filterTenders(rows, f({ client: "b", q: "RADIATOR" })).map((r) => r.ref_no)).toEqual(["TND-3"]);
     expect(filterTenders(rows, f({ q: "tnd-2" })).map((r) => r.ref_no)).toEqual(["TND-2"]);
   });
+  it("filters by source", () => {
+    expect(filterTenders(rows, f({ source: "whatsapp" })).map((r) => r.ref_no)).toEqual(["TND-2", "TND-3"]);
+  });
   it("round-trips through the URL query", () => {
-    const x = f({ statuses: ["won", "lost"], client: "b", q: "gear pump" });
+    const x = f({ statuses: ["won", "lost"], client: "b", source: "referral", q: "gear pump", view: "board" });
     const q = tenderFiltersToQuery(x);
     expect(parseTenderFilters(Object.fromEntries(new URLSearchParams(q)))).toEqual(x);
     expect(tenderFiltersToQuery(f({}))).toBe("");

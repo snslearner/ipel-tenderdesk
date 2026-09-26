@@ -93,3 +93,44 @@ export async function resetLockedPo(poNumber: string) {
   if (upd.error) throw upd.error;
   if (upd.data.length !== 1) throw new Error(`${poNumber} moved past acknowledged (${po.data.status}); cannot restore`);
 }
+
+// ---- CRM test data: every record starts with "E2E " and is deleted by the test that made it.
+
+export async function createTestTender(title: string, submissionDue: string | null, source: "whatsapp" | "phone_call" = "whatsapp") {
+  const sb = await supabaseAs("tender@example.com");
+  const client = await sb.from("clients").select("id").order("name").limit(1).single();
+  if (client.error) throw client.error;
+  const ref = `E2E-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+  const { data, error } = await sb
+    .from("tenders")
+    .insert({ ref_no: ref, title, client_id: client.data.id, source, submission_due: submissionDue })
+    .select("id, ref_no")
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function createTestReminder(text: string, dueOn: string) {
+  const sb = await supabaseAs("tender@example.com");
+  const { error } = await sb.from("reminders").insert({ kind: "manual", text, due_on: dueOn, assignee_role: "owner", channel: "visit" });
+  if (error) throw error;
+}
+
+// Deletes E2E tenders/customers/reminders whose title/name/text contains the marker.
+export async function deleteTestData(marker: string) {
+  if (!marker.startsWith("E2E ")) throw new Error("refusing to delete data without the E2E marker");
+  const sb = await supabaseAs("tender@example.com");
+  const tenders = await sb.from("tenders").select("id").ilike("title", `%${marker}%`);
+  if (tenders.error) throw tenders.error;
+  const ids = tenders.data.map((t) => t.id);
+  if (ids.length) {
+    const r1 = await sb.from("reminders").delete().in("entity_id", ids);
+    if (r1.error) throw r1.error;
+    const r2 = await sb.from("tenders").delete().in("id", ids);
+    if (r2.error) throw r2.error;
+  }
+  for (const [table, col] of [["reminders", "text"], ["clients", "name"]] as const) {
+    const r = await sb.from(table).delete().ilike(col, `%${marker}%`);
+    if (r.error) throw r.error;
+  }
+}
